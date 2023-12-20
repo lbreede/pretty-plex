@@ -34,7 +34,7 @@ This project is licensed under the [MIT License](LICENSE).
 
 For any questions or feedback, please contact:
 
-- Name: Your Name
-- Email: your@email.com
-- GitHub: [Your GitHub Profile](https://github.com/your-username)
+- Name: Lennart Breede
+- Email: lennart.breede@gmail.com
+- GitHub: [lbreede](https://github.com/lbreede)
 
