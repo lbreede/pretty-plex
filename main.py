@@ -52,7 +52,9 @@ class Movie:
         # Scuffed but working
         # TODO: Handle more pt/cd/disc numbers (cd1, cd2, etc.)
         if metadata:
-            metadata = metadata.lstrip(" {").rstrip(" }")
+            print("before", repr(metadata))
+            metadata = metadata[2:-1]  # .lstrip(" {").rstrip("}")
+            print("after", repr(metadata))
             metadata = metadata.split("} {")
             for item in metadata:
                 key, value = item.split("-", 1)
