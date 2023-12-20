@@ -2,7 +2,8 @@ import os
 import re
 from dataclasses import dataclass, field
 from typing import Optional, Self
-from enum import Enum, auto
+import argparse
+import logging
 
 HOME_DIR = os.path.expanduser("~")
 PLEX_DIR = os.path.join(HOME_DIR, "Plex")
@@ -10,6 +11,13 @@ PLEX_MOVIES_DIR = os.path.join(PLEX_DIR, "Movies")
 
 
 IGNORED_FILES = {".DS_Store"}
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(levelname)-8s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 
 class bcolors:
@@ -93,35 +101,36 @@ class Collection:
     @classmethod
     def parse_path(cls, path: str) -> Self:
         _, dirs, files = next(os.walk(path))
-        collection = cls()
+        c = cls()
         for dirname in dirs:
             movie = Movie.parse_directory(dirname)
-            collection.add_movie(movie)
+            c.add_movie(movie)
         for filename in files:
             if filename in IGNORED_FILES:
                 continue
             movie = Movie.parse_file(filename)
-            collection.add_movie(movie)
-        return collection
+            c.add_movie(movie)
+        return c
 
-    def extend_from_path(self, path: str) -> None:
-        _, dirs, files = next(os.walk(path))
-        for dirname in dirs:
-            movie = Movie.parse_directory(dirname)
-            self.add_movie(movie)
-        for filename in files:
-            if filename in IGNORED_FILES:
-                continue
-            movie = Movie.parse_file(filename)
-            self.add_movie(movie)
-
-    def add_movie(self, movie: Movie, do_sort: bool = True) -> None:
+    def add_movie(self, movie: Movie) -> None:
         self.collection.append(movie)
-        if do_sort:
-            self.sort()
+        logger.debug("Added %r", movie.full_title)
 
-    def sort(self) -> None:
-        self.collection.sort(key=lambda movie: movie.title)
+    def sort(self, key: str) -> None:
+        key = key.lower()
+
+        if key not in ("title", "year", "imdb", "tmdb"):
+            logger.warning("Invalid sorting key %r, using 'title' instead", key)
+            key = "title"
+
+        if key in ("imdb", "tmdb"):
+            # TODO: Implement sorting by IMDb/TMDB
+            logger.warning(
+                "Sorting by %r is not supported yet, using 'title' instead", key
+            )
+            key = "title"
+
+        self.collection.sort(key=lambda movie: getattr(movie, key))
 
     def _get_width(self, attr: str) -> int:
         width = len(attr)
@@ -170,10 +179,13 @@ class Collection:
         return self._table()
 
 
-def main() -> None:
-    collection = Collection.parse_path(PLEX_MOVIES_DIR)
-    print(collection)
-
-
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("path")
+    parser.add_argument("--sort", default="title")
+    args = parser.parse_args()
+
+    collection = Collection.parse_path(args.path)
+    collection.sort(args.sort)
+
+    print(collection)
